@@ -293,7 +293,7 @@ if [ -z "$POSTGRES_PASSWORD" ]; then
   exit 1
 fi
 
-docker pull "decentraland/katalyst:${DOCKER_TAG:latest}"
+docker pull "kevingalileostudio/katalyst:${DOCKER_TAG:latest}"
 if [ $? -ne 0 ]; then
   echo -n "Failed to pull the docker image with tag ${DOCKER_TAG:latest}"
   printMessage failed
