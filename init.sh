@@ -214,15 +214,22 @@ else
 fi
 
 # Define defaults
-DOCKER_TAG=${DOCKER_TAG:-latest}
+export DOCKER_TAG=${DOCKER_TAG:-latest}
+export LIGHTHOUSE_DOCKER_TAG=${LIGHTHOUSE_DOCKER_TAG:-latest}
 REGENERATE=${REGENERATE:-0}
 SLEEP_TIME=${SLEEP_TIME:-5}
+MAINTENANCE_MODE=${MAINTENANCE_MODE:-0}
 
 if [ "$DOCKER_TAG" != "latest" ]; then
-    echo -e "\033[33m WARNING: You are not running latest image of Catalyst. \033[39m"
+    echo -e "\033[33m WARNING: You are not running latest image of Catalyst's Content and Catalyst's Lambdas Nodes. \033[39m"
+fi
+
+if [ "$LIGHTHOUSE_DOCKER_TAG" != "latest" ]; then
+    echo -e "\033[33m WARNING: You are not running latest image of Catalyst's Lighthouse Node. \033[39m"
 fi
 
 echo -n " - DOCKER_TAG:              " ; echo -e "\033[33m ${DOCKER_TAG} \033[39m"
+echo -n " - LIGHTHOUSE_DOCKER_TAG:   " ; echo -e "\033[33m ${LIGHTHOUSE_DOCKER_TAG} \033[39m"
 echo -n " - CATALYST_URL:            " ; echo -e "\033[33m ${CATALYST_URL} \033[39m"
 echo -n " - CONTENT_SERVER_STORAGE:  " ; echo -e "\033[33m ${CONTENT_SERVER_STORAGE} \033[39m"
 echo -n " - EMAIL:                   " ; echo -e "\033[33m ${EMAIL} \033[39m"
@@ -293,9 +300,23 @@ if [ -z "$POSTGRES_PASSWORD" ]; then
   exit 1
 fi
 
-docker pull "kevingalileostudio/katalyst:${DOCKER_TAG:latest}"
+docker pull "decentraland/catalyst-content:${DOCKER_TAG:latest}"
 if [ $? -ne 0 ]; then
-  echo -n "Failed to pull the docker image with tag ${DOCKER_TAG:latest}"
+  echo -n "Failed to pull the content's docker image with tag ${DOCKER_TAG:latest}"
+  printMessage failed
+  exit 1
+fi
+
+docker pull "decentraland/catalyst-lambdas:${DOCKER_TAG:latest}"
+if [ $? -ne 0 ]; then
+  echo -n "Failed to pull the lambda's docker image with tag ${DOCKER_TAG:latest}"
+  printMessage failed
+  exit 1
+fi
+
+docker pull "decentraland/catalyst-lighthouse:${LIGHTHOUSE_DOCKER_TAG:latest}"
+if [ $? -ne 0 ]; then
+  echo -n "Failed to pull the lighthouse's docker image with tag ${LIGHTHOUSE_DOCKER_TAG:latest}"
   printMessage failed
   exit 1
 fi
@@ -355,11 +376,15 @@ fi
 
 echo "## Restarting containers... "
 docker-compose down
-docker-compose -f docker-compose.yml -f "platform.$(uname -s).yml" up -d nginx
-
-if test $? -ne 0; then
-  echo -n "Failed to start catalyst node"
-  printMessage failed
-  exit 1
+if test ${MAINTENANCE_MODE} -eq 1; then
+  echo 'Running maintenance...'
+  docker-compose -f docker-compose-maintenance.yml up -d
+else
+  docker-compose -f docker-compose.yml -f "platform.$(uname -s).yml" up -d nginx
+  if test $? -ne 0; then
+    echo -n "Failed to start catalyst node"
+    printMessage failed
+    exit 1
+  fi
+  echo "## Catalyst server is up and running at $CATALYST_URL"
 fi
-echo "## Catalyst server is up and running at $CATALYST_URL"
