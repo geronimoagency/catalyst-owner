@@ -82,7 +82,7 @@ services:
       options: { tag: node-exporter }
 
   content-server:
-    image: decentraland/catalyst-content:${DOCKER_TAG:-latest}
+    image: kevingalileostudio/catalyst-content:${DOCKER_TAG:-latest}
     working_dir: /app
     environment:
       - LOG_REQUESTS=false # Request logs are produced by NGINX
