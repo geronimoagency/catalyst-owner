@@ -13,3 +13,4 @@ dcl.pem
 database
 contents
 .idea
+*.pem
